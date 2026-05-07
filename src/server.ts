@@ -25,7 +25,7 @@ export const creareServer = () => {
       }
 
       return new Response(
-        `<html><body><h1>Hola Mundo!!!</h1></body></html>`,
+        Bun.file("public/index.html"),
         {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         }
