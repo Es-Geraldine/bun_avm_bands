@@ -43,9 +43,10 @@
      console.log("Mensaje del servidor", message);
      })
      
-    socket.on("disconnect", () => {
-    ºconsole.log("Perdimos comunicación con el servidor");
-     })
+    socket.on("BANDS_LIST", (bands) => {
+     console.clear();
+     console.table(bands);
+    })
 
 
 

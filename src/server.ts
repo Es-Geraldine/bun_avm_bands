@@ -1,30 +1,48 @@
 import { Server } from "socket.io";
 import { Server as Engine } from "@socket.io/bun-engine";
 import { SERVER_CONFIG } from "./config/server-config";
-
+import { bandsService } from './services/bands.service';
 
 export const creareServer = () => {
 
   const io = new Server();
-
   const engine = new Engine({ path: SERVER_CONFIG.path });
 
   io.bind(engine);
-  
+
   io.on("connection", (socket) => {
     console.log(`Cliente conectado (socket.id): ${socket.id}`);
 
     socket.emit("saludo", "Hola desde el servidor");
 
-    socket.on("chat", (msg)=> io.emit("chat", msg));
-})
+    socket.on("chat", (msg) => io.emit("chat", msg));
 
-io.on("disconnect", (socket) => {
-    console.log(`Cliente desconectado: ${socket.id}`);
-})
+    socket.emit("BANDS_LIST", bandsService.obtinereBands());
 
+    socket.on("ADD_BAND", (payload: { nomen: string }) => {
+      if (payload.nomen.trim() === "") return;
 
+      bandsService.addereBand(payload.nomen);
+      io.emit("BANDS_LIST", bandsService.obtinereBands());
+    });
 
+    socket.on("VOTE_BAND", (payload: { id: string }) => {
+      const band = bandsService.addereVotumBand(payload.id);
+      if (band) {
+        io.emit("BANDS_LIST", bandsService.obtinereBands());
+      }
+    });
+
+    socket.on("DELETE_BAND", (payload: { id: string }) => {
+      bandsService.delereBand(payload.id);
+      io.emit("BANDS_LIST", bandsService.obtinereBands());
+    });
+
+    // 🔥 CORRECTO: evento disconnect dentro del connection
+    socket.on("disconnect", () => {
+      console.log(`Cliente desconectado (socket.id): ${socket.id}`);
+    });
+  });
 
   const { fetch: engineFetch, websocket } = engine.handler();
 
@@ -32,6 +50,7 @@ io.on("disconnect", (socket) => {
     port: SERVER_CONFIG.port,
     idleTimeout: SERVER_CONFIG.idleTimeout,
     websocket,
+
     fetch(req: Request, server: Parameters<typeof engineFetch>[1]) {
       const url = new URL(req.url);
 
@@ -39,16 +58,11 @@ io.on("disconnect", (socket) => {
         return engineFetch(req, server);
       }
 
-      return new Response(
-        Bun.file("public/index.html"),
-        {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        }
-      );
-
-    },
+      return new Response(Bun.file("./public/index.html"), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
   });
 
   return server;
-  
-}
+};
