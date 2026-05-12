@@ -42,7 +42,13 @@
     socket.on("chat", (message) => {
      console.log("Mensaje del servidor", message);
      })
-    
+     
+    socket.on("disconnect", () => {
+    ºconsole.log("Perdimos comunicación con el servidor");
+     })
+
+
+
   </script>
 
 
